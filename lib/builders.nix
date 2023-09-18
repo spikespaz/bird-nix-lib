@@ -140,6 +140,7 @@ let
     let
       _atRoot = path: builtins.match "^/[^/]*/?$" path != null;
       _hasPrefix = lib.hasPrefix (toString dirName) name;
+      _extMatch = builtins.match "^.*(\\..+)$" name;
     in rec {
       inherit name type;
       path = "${pathPrefix}/${baseName}";
@@ -147,8 +148,8 @@ let
       pathPrefix = toString dirName;
       relPath = if _hasPrefix then lib.removePrefix pathPrefix name else name;
       atRoot = _atRoot relPath;
-      extMatch = builtins.match "^.*(\\..+)$" name;
-      extension = if extMatch != null then builtins.elemAt extMatch 0 else null;
+      extension =
+        if _extMatch != null then builtins.elemAt _extMatch 0 else null;
       isHidden = lib.hasPrefix "." baseName;
       isLink = type == "symlink";
       isFile = type == "regular";
