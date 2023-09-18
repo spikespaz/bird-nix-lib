@@ -136,25 +136,34 @@ let
         extraSpecialArgs = args // extraSpecialArgs // { inherit nixpkgs lib; };
       });
 
-  mkDirEntry = dirname: basename: type: rec {
-    inherit type;
-    name = basename;
-    path = "${dirname}/${basename}";
-
-    isHidden = lib.hasPrefix "." name;
-    isFile = type == "regular";
-    isDir = type == "directory";
-    isProject = !isHidden && (isFile || isDir);
-    isNixFile = isFile && lib.hasSuffix ".nix" name;
-    isDefault = isFile && name == "default.nix";
-    hasDefault = let ls = builtins.readDir "${path}";
-    in isDir && ls ? "default.nix" && ls."default.nix" == "regular";
-    hasNixFiles =
-      let ls = lib.mapAttrsToList (mkDirEntry path) (builtins.readDir path);
-      in isDir
-      && (builtins.any (it: it.isNixFile || (it.isDir && it.hasNixFiles)) ls);
-    isNix = isProject && (isNixFile || (isDir && hasNixFiles));
-  };
+  mkDirEntry = dirName: name: type:
+    let
+      _atRoot = path: builtins.match "^/[^/]*/?$" path != null;
+      _hasPrefix = lib.hasPrefix (toString dirName) name;
+    in rec {
+      inherit name type;
+      path = "${pathPrefix}/${baseName}";
+      baseName = baseNameOf name;
+      pathPrefix = toString dirName;
+      relPath = if _hasPrefix then lib.removePrefix pathPrefix name else name;
+      atRoot = _atRoot relPath;
+      extMatch = builtins.match "^.*(\\..+)$" name;
+      extension = if extMatch != null then builtins.elemAt extMatch 0 else null;
+      isHidden = lib.hasPrefix "." baseName;
+      isLink = type == "symlink";
+      isFile = type == "regular";
+      isDir = type == "directory";
+      isProject = !isHidden && (isFile || isDir);
+      isNixFile = isFile && lib.hasSuffix ".nix" baseName;
+      isDefault = isFile && baseName == "default.nix";
+      hasDefault = let ls = builtins.readDir "${path}";
+      in isDir && ls ? "default.nix" && ls."default.nix" == "regular";
+      hasNixFiles =
+        let ls = lib.mapAttrsToList (mkDirEntry path) (builtins.readDir path);
+        in isDir
+        && (builtins.any (it: it.isNixFile || (it.isDir && it.hasNixFiles)) ls);
+      isNix = isProject && (isNixFile || (isDir && hasNixFiles));
+    };
 in {
   #
   inherit mkFlakeTree mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay mkHost

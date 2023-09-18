@@ -1,19 +1,11 @@
 { lib }:
 let
   sourceFilter = fn: sourceRoot: name: type:
-    let
-      baseName = baseNameOf name;
-      pathPrefix = toString sourceRoot;
-      relPath = lib.removePrefix pathPrefix name;
-      atRoot = builtins.match "^/[^/]*/?$" relPath != null;
-      isFile = type == "regular";
-      isDir = type == "directory";
-      isLink = type == "symlink";
-      extMatch = builtins.match "^.*(\\..+)$" name;
-      extension = if extMatch != null then builtins.elemAt extMatch 0 else null;
-    in lib.applyAutoArgs fn {
-      inherit name type baseName relPath atRoot isFile isDir isLink extension;
-    };
+    let entry = lib.mkDirEntry sourceRoot name type;
+    in if builtins.functionArgs fn == { } then
+      fn entry
+    else
+      lib.applyAutoArgs fn entry;
 
   # Compose multiple filters into one, suitable for `lib.cleanSourceWith`.
   # The first argument is the source root, and the second is a list of filters.
