@@ -75,17 +75,17 @@ in lib.birdos.mkTestSuite {
   vcsSourceFilter = [
     {
       name = "allow file named .git";
-      expr = lib.unknownSourceFilter src "${src}/.git" "regular";
+      expr = lib.vcsSourceFilter src "${src}/.git" "regular";
       expect = true;
     }
     {
       name = "deny .git directory";
-      expr = lib.unknownSourceFilter src "${src}/.git" "directory";
+      expr = lib.vcsSourceFilter src "${src}/.git" "directory";
       expect = false;
     }
     {
       name = "deny nested .git directory";
-      expr = lib.unknownSourceFilter src "${src}/subproject/.git" "directory";
+      expr = lib.vcsSourceFilter src "${src}/subproject/.git" "directory";
       expect = false;
     }
   ];
