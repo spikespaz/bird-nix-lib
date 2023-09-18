@@ -8,7 +8,7 @@
     nixfmt.url = "github:serokell/nixfmt";
   };
 
-  outputs = { self, nixpkgs-lib, systems, nixfmt, ... }:
+  outputs = { self, nixpkgs-lib, systems, nixfmt }:
     let
       inherit (self.lib) lib;
       eachSystem = lib.genAttrs (import systems);
