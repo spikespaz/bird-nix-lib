@@ -10,6 +10,33 @@ let
     expected = lib.generators.toPretty { multiline = true; } expect;
   };
 
+  getTestsCoverage = expr: args: compare:
+    let
+      # Get all unique paths from combined test suites.
+      testPaths = lib.pipe expr [
+        (expr: importTests expr args)
+        (collectTests [ ] [ ])
+        (map (test: test.path))
+        lib.unique
+      ];
+      # Remove any paths from the comparison set
+      # that do not have a function value.
+      comparePaths =
+        lib.filter (path: lib.isFunction (lib.getAttrFromPath path compare))
+        (lib.attrPaths compare);
+      # Find the paths of all fuctions from comparison set
+      # which have a corresponding test.
+      coveredPaths = lib.intersectLists comparePaths testPaths;
+      # Filter out the paths that have a corresponding test.
+      missingPaths =
+        lib.filter (path: !(builtins.elem path coveredPaths)) comparePaths;
+    in {
+      inherit missingPaths;
+      total = lib.length comparePaths;
+      covered = lib.length coveredPaths;
+      missing = lib.length missingPaths;
+    };
+
   runTestsRecursive = expr: args:
     lib.pipe expr [
       (expr: importTests expr args)
@@ -117,6 +144,6 @@ let
       lib.flatten
       (lib.mapAttrsToList (name: collectTests acc (path ++ [ name ])) attrs);
 in { # #
-  inherit evalTest runTestsRecursive mkTestSuite isTestSuite importTests
-    collectTests;
+  inherit evalTest runTestsRecursive getTestsCoverage mkTestSuite isTestSuite
+    importTests collectTests;
 }
