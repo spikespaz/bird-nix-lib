@@ -1,6 +1,6 @@
 lib: lib0:
 let
-  inherit (import ./attrsets.nix { lib = lib0; }) importDir;
+  inherit (import ./attrsets.nix { inherit lib; }) importDir;
   libAttrs =
     lib.mapAttrs (_: fn: fn { inherit lib; }) (importDir ./. "default.nix");
 
@@ -39,8 +39,7 @@ in lib0 // prelude // {
     inherit prelude;
     lib = libAttrs;
     inherit (libAttrs.builders)
-      mkFlakeTree importDir mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay
-      mkHost mkHome;
+      mkFlakeTree mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay mkHost mkHome;
     inherit (libAttrs.tests)
       evalTest runTestsRecursive mkTestSuite isTestSuite importTests
       collectTests;
