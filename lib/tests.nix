@@ -43,13 +43,13 @@ let
         let ratio = if total == 0 then 1 else (covered + 0.0) / total;
         in lib.trace ''
           ${lib.optionalString (missing != 0) ''
-            MISSING: ${toString missing}
+            MISSING TESTS: ${toString missing}
 
             ${lib.concatImapStringsSep "\n"
             (i: path: "${toString i}: ${lib.concatStringsSep "." path}")
             missingPaths}
           ''}
-          TEST COVERAGE: ${toString covered}/${toString total} (${
+          COVERAGE SCORE: ${toString covered}/${toString total} (${
             lib.toPercent 2 ratio
           })
         '' { inherit ratio total covered missing; })
