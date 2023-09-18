@@ -35,11 +35,10 @@ let
         in lib.trace ''
           TOTAL FAILURES: ${toString failed}/${toString total} (${
             lib.toPercent 2 ratio
-          })
-
-          ${lib.concatImapStrings (i: res: (''
-            ${toString i}: ${makePrettyName res}
-          '')) failures}
+          })${
+            lib.optionalString (failed != 0) (lib.concatImapStringsSep "\n"
+              (i: res: ("${toString i}: ${makePrettyName res}")) failures)
+          }
         '' failures)
       (failures:
         if builtins.length failures == 0 then
