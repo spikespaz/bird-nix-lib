@@ -48,60 +48,60 @@ let
       missing = lib.length missingPaths;
     };
 
-  showTestResults = { successes, failures }:
-    let
-      succeeded = lib.length successes;
-      # Folding sum has been used to force failures down the eval path,
-      # so that traces can be displayed.
-      failed = lib.length failures;
-      total = succeeded + failed;
-      ratio = (failed + 0.0) / total;
-    in {
-      inherit ratio total succeeded failed;
-      message = ''
-        ${lib.concatMapStringsSep "\n" (result: ''
-          ${makePrettyName result}
-          evaluated: ${result.evaluated}
-          expected: ${result.expected}
-        '') failures}
-          TOTAL FAILURES: ${toString failed}/${toString total} (${
-            lib.toPercent 2 ratio
-          })${
-            lib.optionalString (failed != 0) (lib.concatImapStringsSep "\n"
-              (i: res: ("${toString i}: ${makePrettyName res}")) failures)
-          }
-      '';
-    };
+  showTestResults = { successes, failures }: rec {
+    succeeded = lib.length successes;
+    failed = lib.length failures;
+    total = succeeded + failed;
+    ratio = (failed + 0.0) / total;
+    message = lib.concatStrings [
+      (lib.concatMapStringsSep "\n" (result: ''
+        FAILED: ${makePrettyName result}
+        evaluated: ${result.evaluated}
+        expected: ${result.expected}
+      '') failures)
+      (lib.optionalString (failed != 0) "\n")
+      ''
+        TOTAL FAILURES: ${toString failed}/${toString total} (${
+          lib.toPercent 2 ratio
+        })
+      ''
+      (lib.optionalString (failed != 0) "\n")
+      (lib.concatImapStringsSep "\n"
+        (i: result: "${toString i}: ${makePrettyName result}") failures)
+    ];
+  };
 
   showTestCoverage = { missingPaths, total, covered, missing }:
     let ratio = if total == 0 then 1 else (covered + 0.0) / total;
     in {
       inherit ratio total covered missing;
-      message = ''
-        ${lib.optionalString (missing != 0) ''
+      message = lib.concatStrings [
+        (lib.optionalString (missing != 0) ''
           MISSING TESTS: ${toString missing}
 
           ${lib.concatImapStringsSep "\n"
           (i: path: "${toString i}: ${lib.concatStringsSep "." path}")
           missingPaths}
-        ''}
-        COVERAGE SCORE: ${toString covered}/${toString total} (${
-          lib.toPercent 2 ratio
-        })
-      '';
+        '')
+        (lib.optionalString (missing != 0) "\n")
+        ''
+          COVERAGE SCORE: ${toString covered}/${toString total} (${
+            lib.toPercent 2 ratio
+          })
+        ''
+      ];
     };
 
   runTestsRecursive = expr: args: compare:
     let
       results = getTestResults expr args;
       coverage = getTestCoverage expr args compare;
-    in lib.trace ''
-      ${lib.optionalString (compare != null)
-      (showTestCoverage coverage).message}
-      ${(showTestResults results).message}
-    '' (builtins.length results.failures == 0
-      # Assert aborts with error code for CI.
-      || (assert false; false));
+    in lib.trace (lib.concatStringsSep "\n" [
+      (lib.optionalString (compare != null) (showTestCoverage coverage).message)
+      (showTestResults results).message
+    ])
+    # Assert aborts with error code for CI.
+    (builtins.length results.failures == 0 || (assert false; false));
 
   mkTestSuite = sections: {
     _type = "tests";
