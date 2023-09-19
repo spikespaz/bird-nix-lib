@@ -37,6 +37,31 @@ let
       missing = lib.length missingPaths;
     };
 
+  showTestResults = { successes, failures }:
+    let
+      succeeded = lib.length successes;
+      # Folding sum has been used to force failures down the eval path,
+      # so that traces can be displayed.
+      failed = lib.foldl' (count: result:
+        lib.trace ''
+          ${makePrettyName result}
+          evaluated: ${result.evaluated}
+          expected: ${result.expected}
+        '' (count + 1)) 0 failures;
+      total = succeeded + failed;
+      ratio = (failed + 0.0) / total;
+    in {
+      inherit ratio total succeeded failed;
+      message = ''
+        TOTAL FAILURES: ${toString failed}/${toString total} (${
+          lib.toPercent 2 ratio
+        })${
+          lib.optionalString (failed != 0) (lib.concatImapStringsSep "\n"
+            (i: res: ("${toString i}: ${makePrettyName res}")) failures)
+        }
+      '';
+    };
+
   traceTestCoverage = expr: args: compare:
     lib.pipe (getTestCoverage expr args compare) [
       ({ missingPaths, total, covered, missing }:
@@ -64,27 +89,8 @@ let
         successes = lib.filter (res: res.passed) results;
         failures = lib.filter (res: !res.passed) results;
       })
-      ({ successes, failures }:
-        let
-          succeeded = lib.length successes;
-          # Folding sum has been used to force failures down the eval path,
-          # so that traces can be displayed.
-          failed = lib.foldl' (count: result:
-            lib.trace ''
-              ${makePrettyName result}
-              evaluated: ${result.evaluated}
-              expected: ${result.expected}
-            '' (count + 1)) 0 failures;
-          total = succeeded + failed;
-          ratio = (failed + 0.0) / total;
-        in lib.trace ''
-          TOTAL FAILURES: ${toString failed}/${toString total} (${
-            lib.toPercent 2 ratio
-          })${
-            lib.optionalString (failed != 0) (lib.concatImapStringsSep "\n"
-              (i: res: ("${toString i}: ${makePrettyName res}")) failures)
-          }
-        '' failures)
+      (results@{ failures, ... }:
+        lib.trace (showTestResults results).message failures)
       (failures:
         if builtins.length failures == 0 then
           true
@@ -162,6 +168,6 @@ let
       lib.flatten
       (lib.mapAttrsToList (name: collectTests acc (path ++ [ name ])) attrs);
 in { # #
-  inherit evalTest runTestsRecursive getTestCoverage traceTestCoverage
-    mkTestSuite isTestSuite importTests collectTests;
+  inherit evalTest runTestsRecursive getTestCoverage showTestResults
+    traceTestCoverage mkTestSuite isTestSuite importTests collectTests;
 }
