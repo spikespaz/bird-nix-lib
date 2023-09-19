@@ -10,7 +10,7 @@ let
     expected = lib.generators.toPretty { multiline = true; } expect;
   };
 
-  getTestsCoverage = expr: args: compare:
+  getTestCoverage = expr: args: compare:
     let
       # Get all unique paths from combined test suites.
       testPaths = lib.pipe expr [
@@ -37,8 +37,8 @@ let
       missing = lib.length missingPaths;
     };
 
-  traceTestsCoverage = expr: args: compare:
-    lib.pipe (getTestsCoverage expr args compare) [
+  traceTestCoverage = expr: args: compare:
+    lib.pipe (getTestCoverage expr args compare) [
       ({ missingPaths, total, covered, missing }:
         let ratio = if total == 0 then 1 else (covered + 0.0) / total;
         in lib.trace ''
@@ -162,6 +162,6 @@ let
       lib.flatten
       (lib.mapAttrsToList (name: collectTests acc (path ++ [ name ])) attrs);
 in { # #
-  inherit evalTest runTestsRecursive getTestsCoverage traceTestsCoverage
+  inherit evalTest runTestsRecursive getTestCoverage traceTestCoverage
     mkTestSuite isTestSuite importTests collectTests;
 }
