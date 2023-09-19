@@ -62,23 +62,27 @@ let
       '';
     };
 
-  traceTestCoverage = expr: args: compare:
-    lib.pipe (getTestCoverage expr args compare) [
-      ({ missingPaths, total, covered, missing }:
-        let ratio = if total == 0 then 1 else (covered + 0.0) / total;
-        in lib.trace ''
-          ${lib.optionalString (missing != 0) ''
-            MISSING TESTS: ${toString missing}
+  showTestCoverage = { missingPaths, total, covered, missing }:
+    let ratio = if total == 0 then 1 else (covered + 0.0) / total;
+    in {
+      inherit ratio total covered missing;
+      message = ''
+        ${lib.optionalString (missing != 0) ''
+          MISSING TESTS: ${toString missing}
 
-            ${lib.concatImapStringsSep "\n"
-            (i: path: "${toString i}: ${lib.concatStringsSep "." path}")
-            missingPaths}
-          ''}
-          COVERAGE SCORE: ${toString covered}/${toString total} (${
-            lib.toPercent 2 ratio
-          })
-        '' { inherit ratio total covered missing; })
-    ];
+          ${lib.concatImapStringsSep "\n"
+          (i: path: "${toString i}: ${lib.concatStringsSep "." path}")
+          missingPaths}
+        ''}
+        COVERAGE SCORE: ${toString covered}/${toString total} (${
+          lib.toPercent 2 ratio
+        })
+      '';
+    };
+
+  traceTestCoverage = expr: args: compare:
+    let show = showTestCoverage (getTestCoverage expr args compare);
+    in lib.trace show.message { inherit (show) ratio total covered missing; };
 
   runTestsRecursive = expr: args:
     lib.pipe expr [
@@ -169,5 +173,6 @@ let
       (lib.mapAttrsToList (name: collectTests acc (path ++ [ name ])) attrs);
 in { # #
   inherit evalTest runTestsRecursive getTestCoverage showTestResults
-    traceTestCoverage mkTestSuite isTestSuite importTests collectTests;
+    showTestCoverage traceTestCoverage mkTestSuite isTestSuite importTests
+    collectTests;
 }
