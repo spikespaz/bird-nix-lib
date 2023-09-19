@@ -10,6 +10,17 @@ let
     expected = lib.generators.toPretty { multiline = true; } expect;
   };
 
+  getTestResults = expr: args:
+    lib.pipe expr [
+      (expr: importTests expr args)
+      (collectTests [ ] [ ])
+      (map evalTest)
+      (results: {
+        successes = lib.filter (res: res.passed) results;
+        failures = lib.filter (res: !res.passed) results;
+      })
+    ];
+
   getTestCoverage = expr: args: compare:
     let
       # Get all unique paths from combined test suites.
@@ -85,23 +96,11 @@ let
     in lib.trace show.message { inherit (show) ratio total covered missing; };
 
   runTestsRecursive = expr: args:
-    lib.pipe expr [
-      (expr: importTests expr args)
-      (collectTests [ ] [ ])
-      (map evalTest)
-      (results: {
-        successes = lib.filter (res: res.passed) results;
-        failures = lib.filter (res: !res.passed) results;
-      })
-      (results@{ failures, ... }:
-        lib.trace (showTestResults results).message failures)
-      (failures:
-        if builtins.length failures == 0 then
-          true
-        else
-        # Force all failures to be evaluated, aborting with error code for CI.
-          assert (builtins.all (_: false) failures); false)
-    ];
+    let results = getTestResults expr args;
+    in lib.trace (showTestResults results).message
+    (builtins.length results.failures == 0
+      # Force all failures to be evaluated, aborting with error code for CI.
+      || (assert (builtins.all (_: false) results.failures); false));
 
   mkTestSuite = sections: {
     _type = "tests";
@@ -172,7 +171,7 @@ let
       lib.flatten
       (lib.mapAttrsToList (name: collectTests acc (path ++ [ name ])) attrs);
 in { # #
-  inherit evalTest runTestsRecursive getTestCoverage showTestResults
-    showTestCoverage traceTestCoverage mkTestSuite isTestSuite importTests
-    collectTests;
+  inherit evalTest getTestResults runTestsRecursive getTestCoverage
+    showTestResults showTestCoverage traceTestCoverage mkTestSuite isTestSuite
+    importTests collectTests;
 }
