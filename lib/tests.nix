@@ -53,23 +53,23 @@ let
       succeeded = lib.length successes;
       # Folding sum has been used to force failures down the eval path,
       # so that traces can be displayed.
-      failed = lib.foldl' (count: result:
-        lib.trace ''
-          ${makePrettyName result}
-          evaluated: ${result.evaluated}
-          expected: ${result.expected}
-        '' (count + 1)) 0 failures;
+      failed = lib.length failures;
       total = succeeded + failed;
       ratio = (failed + 0.0) / total;
     in {
       inherit ratio total succeeded failed;
       message = ''
-        TOTAL FAILURES: ${toString failed}/${toString total} (${
-          lib.toPercent 2 ratio
-        })${
-          lib.optionalString (failed != 0) (lib.concatImapStringsSep "\n"
-            (i: res: ("${toString i}: ${makePrettyName res}")) failures)
-        }
+        ${lib.concatMapStringsSep "\n" (result: ''
+          ${makePrettyName result}
+          evaluated: ${result.evaluated}
+          expected: ${result.expected}
+        '') failures}
+          TOTAL FAILURES: ${toString failed}/${toString total} (${
+            lib.toPercent 2 ratio
+          })${
+            lib.optionalString (failed != 0) (lib.concatImapStringsSep "\n"
+              (i: res: ("${toString i}: ${makePrettyName res}")) failures)
+          }
       '';
     };
 
@@ -100,8 +100,8 @@ let
       (showTestCoverage coverage).message}
       ${(showTestResults results).message}
     '' (builtins.length results.failures == 0
-      # Force all failures to be evaluated, aborting with error code for CI.
-      || (assert (builtins.all (_: false) results.failures); false));
+      # Assert aborts with error code for CI.
+      || (assert false; false));
 
   mkTestSuite = sections: {
     _type = "tests";
