@@ -91,14 +91,15 @@ let
       '';
     };
 
-  traceTestCoverage = expr: args: compare:
-    let show = showTestCoverage (getTestCoverage expr args compare);
-    in lib.trace show.message { inherit (show) ratio total covered missing; };
-
-  runTestsRecursive = expr: args:
-    let results = getTestResults expr args;
-    in lib.trace (showTestResults results).message
-    (builtins.length results.failures == 0
+  runTestsRecursive = expr: args: compare:
+    let
+      results = getTestResults expr args;
+      coverage = getTestCoverage expr args compare;
+    in lib.trace ''
+      ${lib.optionalString (compare != null)
+      (showTestCoverage coverage).message}
+      ${(showTestResults results).message}
+    '' (builtins.length results.failures == 0
       # Force all failures to be evaluated, aborting with error code for CI.
       || (assert (builtins.all (_: false) results.failures); false));
 
@@ -172,6 +173,6 @@ let
       (lib.mapAttrsToList (name: collectTests acc (path ++ [ name ])) attrs);
 in { # #
   inherit evalTest getTestResults runTestsRecursive getTestCoverage
-    showTestResults showTestCoverage traceTestCoverage mkTestSuite isTestSuite
-    importTests collectTests;
+    showTestResults showTestCoverage mkTestSuite isTestSuite importTests
+    collectTests;
 }

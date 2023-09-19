@@ -30,7 +30,9 @@
       # $ nix flake check
       # or
       # $ nix eval 'path:.#tests'
-      tests = lib.birdos.runTestsRecursive ./tests { inherit lib; };
+      tests = lib.birdos.runTestsRecursive ./tests { inherit lib; } {
+        inherit (self.lib.lib.birdos) lib;
+      };
       # $ nix fmt
       formatter = eachSystem (system: nixfmt.packages.${system}.default);
     };

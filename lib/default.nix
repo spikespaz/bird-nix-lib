@@ -42,8 +42,7 @@ in lib0 // prelude // {
       mkFlakeTree mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay mkHost mkHome;
     inherit (libAttrs.tests)
       evalTest getTestResults runTestsRecursive getTestCoverage showTestResults
-      showTestCoverage traceTestCoverage mkTestSuite isTestSuite importTests
-      collectTests;
+      showTestCoverage mkTestSuite isTestSuite importTests collectTests;
     inherit (libAttrs) colors;
   };
 
