@@ -43,7 +43,6 @@ in lib0 // prelude // {
     inherit (libAttrs.tests)
       evalTest getTestResults runTestsRecursive getTestCoverage showTestResults
       showTestCoverage mkTestSuite isTestSuite importTests collectTests;
-    inherit (libAttrs) colors;
   };
 
   maintainers.spikespaz = {
