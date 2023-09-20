@@ -24,7 +24,7 @@ let
     ];
 
   # systems = with lib.systems.doubles;
-  #   lib.birdos.mkFlakeSystems [
+  #   lib.bird.mkFlakeSystems [
   #     [ x86_64 linux ]
   #     [ arm linux ]
   #     [ aarch64 linux ]

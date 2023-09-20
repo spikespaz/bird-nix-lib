@@ -1,5 +1,5 @@
 { lib }:
-lib.birdos.mkTestSuite {
+lib.bird.mkTestSuite {
   indicesOf = [{
     name = "finds multiple indices";
     expr = lib.indicesOf 1 [ 0 1 0 0 0 1 0 1 0 1 1 1 ];

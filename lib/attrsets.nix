@@ -80,7 +80,7 @@ let
           (name: type: !(builtins.elem name deny))
         else if (types.listOf types.function).check deny then
         # Multiple predicates in a list, join them.
-          (name: type: lib.birdos.mkJoinedOverlays deny)
+          (name: type: lib.bird.mkJoinedOverlays deny)
         else
           throw
           "importDir predicate should be a string, function, or list of strings or functions";

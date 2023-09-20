@@ -22,7 +22,7 @@
         overlay = import ./lib;
         # ```nix
         # let
-        #   lib = inputs.birdos.lib.lib;
+        #   lib = inputs.bird.lib.lib;
         # in
         # ```
         lib = nixpkgs-lib.lib.extend (self.lib.overlay);
@@ -30,8 +30,8 @@
       # $ nix flake check
       # or
       # $ nix eval 'path:.#tests'
-      tests = lib.birdos.runTestsRecursive ./tests { inherit lib; } {
-        inherit (self.lib.lib.birdos) lib;
+      tests = lib.bird.runTestsRecursive ./tests { inherit lib; } {
+        inherit (self.lib.lib.bird) lib;
       };
       # $ nix fmt
       formatter = eachSystem (system: nixfmt.packages.${system}.default);

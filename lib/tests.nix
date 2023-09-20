@@ -119,7 +119,7 @@ let
   # Arguments provided will be surgically applied to any
   # functions encountered, at any level (even top).
   importTests = expr: args:
-    if lib.birdos.isTestSuite expr then
+    if isTestSuite expr then
     # This is the final step for any attribute set. Recursion ends here.
       expr
     else if lib.types.path.check expr then
@@ -166,7 +166,7 @@ let
   # collecting all tests into a final list.
   # The list preserves the attribute path in `path` of each test.
   collectTests = acc: path: attrs:
-    if lib.birdos.isTestSuite attrs then
+    if isTestSuite attrs then
       acc ++ map (test: test // { path = path ++ test.path; }) attrs.tests
     else
       lib.flatten

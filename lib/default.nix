@@ -35,7 +35,7 @@ let
     inherit (libAttrs.builders) mkDirEntry;
   };
 in lib0 // prelude // {
-  birdos = {
+  bird = {
     inherit prelude;
     lib = libAttrs;
     inherit (libAttrs.builders)
