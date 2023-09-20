@@ -1,0 +1,5 @@
+# Editors
+.vscode/
+
+# Nix
+/result
