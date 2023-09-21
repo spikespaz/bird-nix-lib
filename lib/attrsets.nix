@@ -6,13 +6,6 @@ let
   # Take a list of attribute sets, recursively updating them into one.
   recursiveUpdates = builtins.foldl' (lib.recursiveUpdate) { };
 
-  # FIXME doc
-  getAttrDefault = default: attrName: attrs:
-    if attrs ? ${attrName} then attrs.${attrName} else default;
-
-  # FIXME doc
-  getAttr = getAttrDefault null;
-
   # TODO doc or remove
   thruAttr = attrName: attrs:
     if lib.isAttrs attrs && attrs ? ${attrName} then
@@ -98,6 +91,6 @@ let
     ];
 in {
   #
-  inherit updates recursiveUpdates getAttrDefault getAttr thruAttr mapThruAttr
-    mapListToAttrs attrPaths importDir;
+  inherit updates recursiveUpdates thruAttr mapThruAttr mapListToAttrs attrPaths
+    importDir;
 }
