@@ -100,4 +100,78 @@ lib.bird.mkTestSuite {
       expect = true;
     }
   ];
+  imply = [
+    {
+      name = "null implies null";
+      expr = lib.imply null 1;
+      expect = null;
+    }
+    {
+      name = "false implies null";
+      expr = lib.imply false 1;
+      expect = null;
+    }
+    {
+      name = "empty attrs implies null";
+      expr = lib.imply { } 1;
+      expect = null;
+    }
+    {
+      name = "empty list implies null";
+      expr = lib.imply [ ] 1;
+      expect = null;
+    }
+    {
+      name = "empty string implies null";
+      expr = lib.imply "" 1;
+      expect = null;
+    }
+    {
+      name = "one implies true";
+      expr = lib.imply 1 true;
+      expect = true;
+    }
+    {
+      name = "true implies true";
+      expr = lib.imply true true;
+      expect = true;
+    }
+    {
+      name = "filled attrs implies true";
+      expr = lib.imply { foo = true; } true;
+      expect = true;
+    }
+    {
+      name = "filled list implies null";
+      expr = lib.imply [ true ] true;
+      expect = true;
+    }
+    {
+      name = "filled string implies null";
+      expr = lib.imply "foo" true;
+      expect = true;
+    }
+    {
+      name = "one implies true";
+      expr = lib.imply 1 true;
+      expect = true;
+    }
+  ];
+  implyDefault = [
+    {
+      name = "false implies default zero";
+      expr = lib.implyDefault false 0 1;
+      expect = 0;
+    }
+    {
+      name = "empty string implies default bar";
+      expr = lib.implyDefault "" "bar" "baz";
+      expect = "bar";
+    }
+    {
+      name = "filled string implies value baz";
+      expr = lib.implyDefault "foo" "bar" "baz";
+      expect = "baz";
+    }
+  ];
 }
