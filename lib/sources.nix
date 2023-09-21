@@ -25,7 +25,7 @@ let
     ];
 
   # Filter out sockets and other types of files we can't have in the store.
-  unknownSourceFilter = sourceFilter ({ type }: !(type == "unknown"));
+  unknownSourceFilter = sourceFilter ({ type }: type != "unknown");
 
   objectSourceFilter = sourceFilter ({ isFile, extension }:
     !(isFile && builtins.elem extension [ ".o" ".so" ]));

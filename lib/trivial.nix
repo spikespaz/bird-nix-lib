@@ -13,13 +13,16 @@ let
   # use d otherwise evaluate v
   imply = c: v: implyDefault c null v;
   implyDefault = c: d: v:
-    if (c == null) || c == false || c == { } || c == [ ] || c == "" || c
-    == 0 then
+    if (c == null)
+    # Statix wants to change this to `!c`, do not let it.
+    || c == false
+    #
+    || c == { } || c == [ ] || c == "" || c == 0 then
       d
     else
       v;
 
-  applyArgs = lib.foldl' (fn': arg: fn' arg);
+  applyArgs = lib.foldl' (fn': fn');
 
   # Given a large attribute set (of arguments),
   # reduce the set to only what the function expects, and apply it.

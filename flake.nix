@@ -25,7 +25,7 @@
         #   lib = inputs.bird.lib.lib;
         # in
         # ```
-        lib = nixpkgs-lib.lib.extend (self.lib.overlay);
+        lib = nixpkgs-lib.lib.extend self.lib.overlay;
       };
       # $ nix flake check
       # or

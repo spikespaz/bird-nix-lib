@@ -5,7 +5,7 @@ let
       (lib.mapAttrsToList (name: type:
         let it = mkDirEntry path name type;
         in if it.isNix then it else null))
-      (builtins.filter (x: !(isNull x)))
+      (builtins.filter (x: x != null))
       (map (it: {
         name =
           if it.isNixFile then lib.removeSuffix ".nix" it.name else it.name;
@@ -49,11 +49,11 @@ let
       (map (it:
         lib.setAttrByPath it.path (it.value.overrideAttrs (self: super:
           lib.recursiveUpdate super {
-            meta.license = (if builtins.isList super.meta.license then
+            meta.license = if builtins.isList super.meta.license then
               map (_: { free = true; }) super.meta.license
             else {
               free = true;
-            });
+            };
           }))))
       (lib.foldl' lib.recursiveUpdate { })
     ];
@@ -121,10 +121,9 @@ let
     ... }:
     let
       ownArgs = builtins.attrNames (builtins.functionArgs (mkHome args));
-      lib = (if args ? lib then args.lib else nixpkgs.lib).extend
-        (self: super: {
-          hm = import "${homeManager}/modules/lib" { lib = self; };
-        });
+      lib = (args.lib or nixpkgs.lib).extend (self: super: {
+        hm = import "${homeManager}/modules/lib" { lib = self; };
+      });
     in homeManager.lib.homeManagerConfiguration ((removeAttrs setup ownArgs)
       // {
         inherit modules;

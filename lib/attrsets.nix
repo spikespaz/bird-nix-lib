@@ -4,7 +4,7 @@ let
   updates = builtins.foldl' (a: b: a // b) { };
 
   # Take a list of attribute sets, recursively updating them into one.
-  recursiveUpdates = builtins.foldl' (lib.recursiveUpdate) { };
+  recursiveUpdates = builtins.foldl' lib.recursiveUpdate { };
 
   # TODO doc or remove
   thruAttr = attrName: attrs:
