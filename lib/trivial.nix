@@ -8,19 +8,18 @@ let
   xor = a: b: (a || b) && !(a && b);
   xnor = a: b: !(a || b) || (a && b);
 
-  # logical implication,
-  # compates c to falsy values, if falsy
-  # use d otherwise evaluate v
-  imply = c: v: implyDefault c null v;
-  implyDefault = c: d: v:
-    if (c == null)
+  # Imply that `cond` is not falsy, if it is,
+  # return `default` and otherwise `value`.
+  imply = cond: value: implyDefault cond null value;
+  implyDefault = cond: default: value:
+    if (cond == null)
     # Statix wants to change this to `!c`, do not let it.
-    || c == false
+    || cond == false
     #
-    || c == { } || c == [ ] || c == "" || c == 0 then
-      d
+    || cond == { } || cond == [ ] || cond == "" || cond == 0 then
+      default
     else
-      v;
+      value;
 
   applyArgs = lib.foldl' (fn': fn');
 
