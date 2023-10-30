@@ -3,6 +3,8 @@ let
   # Take a list of attribute sets, flatly updating them all into one.
   updates = builtins.foldl' (a: b: a // b) { };
 
+  hasAttrs = names: attrs: lib.all (name: lib.hasAttr name attrs) names;
+
   # Take a list of attribute sets, recursively updating them into one.
   recursiveUpdates = builtins.foldl' lib.recursiveUpdate { };
 
@@ -91,6 +93,6 @@ let
     ];
 in {
   #
-  inherit updates recursiveUpdates thruAttr mapThruAttr mapListToAttrs attrPaths
-    importDir;
+  inherit updates hasAttrs recursiveUpdates thruAttr mapThruAttr mapListToAttrs
+    attrPaths importDir;
 }
