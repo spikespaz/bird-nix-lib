@@ -5,6 +5,10 @@ let
 
   hasAttrs = names: attrs: lib.all (name: lib.hasAttr name attrs) names;
 
+  hasExactAttrs = names: attrs:
+    lib.length names == lib.length (lib.attrNames attrs)
+    && lib.hasAttrs names attrs;
+
   # Take a list of attribute sets, recursively updating them into one.
   recursiveUpdates = builtins.foldl' lib.recursiveUpdate { };
 
@@ -93,6 +97,6 @@ let
     ];
 in {
   #
-  inherit updates hasAttrs recursiveUpdates thruAttr mapThruAttr mapListToAttrs
-    attrPaths importDir;
+  inherit updates hasAttrs hasExactAttrs recursiveUpdates thruAttr mapThruAttr
+    mapListToAttrs attrPaths importDir;
 }

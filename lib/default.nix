@@ -6,8 +6,8 @@ let
 
   prelude = {
     inherit (libAttrs.attrsets)
-      updates hasAttrs recursiveUpdates thruAttr mapThruAttr mapListToAttrs
-      attrPaths importDir;
+      updates hasAttrs hasExactAttrs recursiveUpdates thruAttr mapThruAttr
+      mapListToAttrs attrPaths importDir;
     inherit (libAttrs.debug) traceM traceValM;
     # FIXME find a new name for `lib.lists.elemAt`, because `nixpkgs` uses
     # `with` on `lib` after `builtins` which makes it use this `elemAt`.
