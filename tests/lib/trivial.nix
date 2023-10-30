@@ -174,4 +174,16 @@ lib.bird.mkTestSuite {
       expect = "baz";
     }
   ];
+  applyArgs = [
+    {
+      name = "applying list of string args concatenates";
+      expr = lib.applyArgs (a: b: c: a + b + c) [ "foo" "bar" "baz" ];
+      expect = "foobarbaz";
+    }
+    {
+      name = "applying list of numerical args sums together";
+      expr = lib.applyArgs (a: b: c: a + b + c) [ 1 2 3 ];
+      expect = 6;
+    }
+  ];
 }
