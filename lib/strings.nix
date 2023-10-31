@@ -158,7 +158,12 @@ let
 
   # Forms a fractional number into a percentage string.
   toPercent = decimals: n:
-    "${rstrip "0" (toString (lib.round decimals (n * 100.0)))}%";
+    let
+      str = toString (lib.round decimals (n * 100.0));
+      split = lib.splitString "." str;
+      whole = lib.elemAtDefault "0" 0 split;
+      frac = rstrip "0" (lib.elemAtDefault "" 1 split);
+    in "${whole}${lib.optionalString (frac != "") (".${frac}")}%";
 in {
   #
   inherit indicesOfChar indexOfCharDefault indexOfChar lastIndexOfCharDefault
