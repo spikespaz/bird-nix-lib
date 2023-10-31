@@ -44,7 +44,7 @@ let
   #
   # This assumes that the index is an integer.
   elemAtDefault = default: index: list:
-    if index > 0 && index < builtins.length list then
+    if index >= 0 && index < builtins.length list then
       builtins.elemAt list index
     else
       default;
