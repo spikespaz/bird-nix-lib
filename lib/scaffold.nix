@@ -46,25 +46,38 @@ let
       }))
     ];
 
-  importDir' = path:
-    lib.pipe (builtins.readDir path) [
-      (lib.mapAttrsToList (name: type:
-        let it = mkDirEntry path name type;
-        in if it.isNix then it else null))
-      (builtins.filter (x: x != null))
+  importDir' = path: pred:
+    let
+      inherit (lib) types;
+      pred' = if pred == null then
+        (_: true)
+      else if lib.isFunction pred then
+      # If the `pred` is already a function leave it alone.
+        pred
+      else if types.singleLineStr.check pred then
+      # A single string is an entry name to be excluded.
+        ({ name, ... }: name != pred)
+      else if (types.listOf types.singleLineStr).check pred then
+      # A list of strings is a list of names to exclude.
+        ({ name, ... }: !(builtins.elem name pred))
+      else if (types.listOf types.function).check pred then
+      # Each function in a list is folded, applied, and compounded with AND.
+        (it: lib.foldl' (pass: fn: pass && fn it) true pred)
+      else
+        throw
+        "pred can only be elaborated from null, string, list of string, function, or list of function";
+    in lib.pipe (builtins.readDir path) [
+      (lib.mapAttrsToList (lib.mkDirEntry path))
+      (builtins.filter (x: x.isNix && pred' x))
       (map (it: {
         name =
           if it.isNixFile then lib.removeSuffix ".nix" it.name else it.name;
         value = if it.isNixFile then
           import it.path
-          ## commented out to fallthrough, will expose
-          ## `default.nix` as `default` attr
-          # else if it.isDir && it.hasDefault then
-          #   import it.path
-        else if it.isDir && it.hasNixFiles then
-          importDir' it.path
+        else if it.hasNixFiles then
+          importDir' it.path pred'
         else
-          abort lib.traceValM "unchecked direntry:" it;
+          abort "unchecked direntry: ${lib.generators.toPretty { } it}";
       }))
       builtins.listToAttrs
     ];
