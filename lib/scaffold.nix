@@ -61,13 +61,13 @@ let
           keep
         else if types.singleLineStr.check keep then
         # A single string is an entry name to be excluded.
-          ({ name, ... }: name != keep)
+          ({ name, isNix, ... }: isNix && name != keep)
         else if (types.listOf types.singleLineStr).check keep then
         # A list of strings is a list of names to exclude.
-          ({ name, ... }: !(builtins.elem name keep))
+          ({ name, isNix, ... }: isNix && !(builtins.elem name keep))
         else if (types.listOf types.function).check keep then
         # Each function in a list is folded, applied, and compounded with AND.
-          (it: lib.foldl' (pass: fn: pass && fn it) true keep)
+          (it: lib.foldl' (pass: fn: pass && fn it) it.isNix keep)
         else
           throw
           "pred can only be elaborated from null, string, list of string, function, or list of function";
