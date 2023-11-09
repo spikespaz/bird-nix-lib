@@ -39,7 +39,7 @@ in lib0 // prelude // {
     inherit prelude;
     lib = libAttrs;
     inherit (libAttrs.scaffold)
-      importDir mkFlakeTree mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay
+      importDir importDir' mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay
       mkHost mkHome;
     inherit (libAttrs.tests)
       evalTest getTestResults runTestsRecursive getTestCoverage showTestResults

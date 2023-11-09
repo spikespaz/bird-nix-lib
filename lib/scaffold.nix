@@ -11,7 +11,7 @@ let
   #  1. Is a regular file ending with `.nix`.
   #  2. Is a directory containing the regular file `default.nix`.
   #  3. Your predicate, given `name` and `type`, returns `true`.
-  importDir = dir: deny:
+  importDir = path: deny:
     let
       inherit (lib) types;
       pred = # #
@@ -35,18 +35,18 @@ let
           "importDir predicate should be a string, function, or list of strings or functions";
       isNix = name: type:
         (type == "regular" && lib.hasSuffix ".nix" name)
-        || (lib.pathIsRegularFile "${dir}/${name}/default.nix");
+        || (lib.pathIsRegularFile "${path}/${name}/default.nix");
       pred' = name: type: (isNix name type) && (pred name type);
-    in lib.pipe dir [
+    in lib.pipe path [
       builtins.readDir
       (lib.filterAttrs pred')
       (lib.mapAttrs' (name: _: {
         name = lib.removeSuffix ".nix" name;
-        value = import "${dir}/${name}";
+        value = import "${path}/${name}";
       }))
     ];
 
-  mkFlakeTree = path:
+  importDir' = path:
     lib.pipe (builtins.readDir path) [
       (lib.mapAttrsToList (name: type:
         let it = mkDirEntry path name type;
@@ -62,7 +62,7 @@ let
           # else if it.isDir && it.hasDefault then
           #   import it.path
         else if it.isDir && it.hasNixFiles then
-          mkFlakeTree it.path
+          importDir' it.path
         else
           abort lib.traceValM "unchecked direntry:" it;
       }))
@@ -212,6 +212,6 @@ let
     };
 in {
   #
-  inherit importDir mkFlakeTree mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay
+  inherit importDir importDir' mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay
     mkHost mkHome mkDirEntry;
 }
