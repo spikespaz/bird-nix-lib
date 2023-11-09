@@ -32,15 +32,16 @@ let
     inherit (libAttrs.trivial)
       not nand nor xor xnor imply implyDefault applyArgs applyAutoArgs;
     inherit (libAttrs.units) bytes kbytes;
-    inherit (libAttrs.scaffold) importDir mkDirEntry;
+    inherit (libAttrs.scaffold)
+      importDir importDir' importDirRecursive mkDirEntry;
   };
 in lib0 // prelude // {
   bird = {
     inherit prelude;
     lib = libAttrs;
     inherit (libAttrs.scaffold)
-      importDir importDir' mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay
-      mkHost mkHome;
+      importDir importDir' importDirRecursive mkFlakeSystems mkJoinedOverlays
+      mkUnfreeOverlay mkHost mkHome;
     inherit (libAttrs.tests)
       evalTest getTestResults runTestsRecursive getTestCoverage showTestResults
       showTestCoverage mkTestSuite isTestSuite importTests collectTests;

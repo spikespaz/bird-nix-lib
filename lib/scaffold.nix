@@ -11,25 +11,25 @@ let
   #  1. Is a regular file ending with `.nix`.
   #  2. Is a directory containing the regular file `default.nix`.
   #  3. Your predicate, given `name` and `type`, returns `true`.
-  importDir = path: deny:
+  importDir = path: keep:
     let
       inherit (lib) types;
       pred = # #
-        if deny == null then
+        if keep == null then
           (_: _: true)
-        else if types.singleLineStr.check deny then
+        else if types.singleLineStr.check keep then
         # A single string is assumed to be a file name to be excluded.
-          (name: type: !(type == "regular" && name == deny))
-        else if lib.isFunction deny then
+          (name: type: !(type == "regular" && name == keep))
+        else if lib.isFunction keep then
         # Basic predicate.
-          deny
-        else if (types.listOf types.singleLineStr).check deny then
+          keep
+        else if (types.listOf types.singleLineStr).check keep then
         # A list of strings is assumed to be files
         # and directory names to exclude.
-          (name: type: !(builtins.elem name deny))
-        else if (types.listOf types.function).check deny then
+          (name: type: !(builtins.elem name keep))
+        else if (types.listOf types.function).check keep then
         # Multiple predicates in a list, join them.
-          (name: type: lib.bird.mkJoinedOverlays deny)
+          (name: type: lib.bird.mkJoinedOverlays keep)
         else
           throw
           "importDir predicate should be a string, function, or list of strings or functions";
@@ -46,38 +46,57 @@ let
       }))
     ];
 
-  importDir' = path: pred:
+  importDir' = path: keep: importDirRecursive path keep false;
+
+  importDirRecursive = path: keep: recurse:
     let
       inherit (lib) types;
-      pred' = if pred == null then
-        (_: true)
-      else if lib.isFunction pred then
-      # If the `pred` is already a function leave it alone.
-        pred
-      else if types.singleLineStr.check pred then
-      # A single string is an entry name to be excluded.
-        ({ name, ... }: name != pred)
-      else if (types.listOf types.singleLineStr).check pred then
-      # A list of strings is a list of names to exclude.
-        ({ name, ... }: !(builtins.elem name pred))
-      else if (types.listOf types.function).check pred then
-      # Each function in a list is folded, applied, and compounded with AND.
-        (it: lib.foldl' (pass: fn: pass && fn it) true pred)
-      else
-        throw
-        "pred can only be elaborated from null, string, list of string, function, or list of function";
+      # Predicate that determines if an importable entry should be kept.
+      keep' = # #
+        if keep == null then
+        # The default is to keep it if it has any Nix.
+          (it: it.isNix)
+        else if lib.isFunction keep then
+        # If the `pred` is already a function leave it alone.
+          keep
+        else if types.singleLineStr.check keep then
+        # A single string is an entry name to be excluded.
+          ({ name, ... }: name != keep)
+        else if (types.listOf types.singleLineStr).check keep then
+        # A list of strings is a list of names to exclude.
+          ({ name, ... }: !(builtins.elem name keep))
+        else if (types.listOf types.function).check keep then
+        # Each function in a list is folded, applied, and compounded with AND.
+          (it: lib.foldl' (pass: fn: pass && fn it) true keep)
+        else
+          throw
+          "pred can only be elaborated from null, string, list of string, function, or list of function";
+      # Predicate that determines if an entry should be recursed.
+      recurse' = # #
+        if lib.isBool recurse then
+        # The default is to recurse on directories of Nix files.
+          (it: recurse && it.hasNixFiles)
+        else if lib.isFunction recurse then
+        # Leave existing functions alone.
+          recurse
+        else if (types.listOf types.function).check recurse then
+        # Each function in a list is folded, applied, and compounded with AND.
+          (it: lib.foldl' (pass: fn: pass && fn it) true recurse)
+        else
+          throw "recurse can only be a boolean or a direntry filter";
     in lib.pipe (builtins.readDir path) [
       (lib.mapAttrsToList (lib.mkDirEntry path))
-      (builtins.filter (x: x.isNix && pred' x))
+      (builtins.filter (it: keep' it || recurse' it))
       (map (it: {
         name =
           if it.isNixFile then lib.removeSuffix ".nix" it.name else it.name;
-        value = if it.isNixFile then
-          import it.path
-        else if it.hasNixFiles then
-          importDir' it.path pred'
-        else
-          abort "unchecked direntry: ${lib.generators.toPretty { } it}";
+        value = # #
+          if it.hasNixFiles && recurse' it then
+            importDirRecursive it.path keep' recurse'
+          else if it.isNixFile || it.hasDefault then
+            import it.path
+          else
+            abort "unfiltered direntry: ${lib.generators.toPretty { } it}";
       }))
       builtins.listToAttrs
     ];
@@ -225,6 +244,6 @@ let
     };
 in {
   #
-  inherit importDir importDir' mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay
-    mkHost mkHome mkDirEntry;
+  inherit importDir importDir' importDirRecursive mkFlakeSystems
+    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome mkDirEntry;
 }
