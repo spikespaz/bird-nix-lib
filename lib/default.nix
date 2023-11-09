@@ -1,13 +1,13 @@
 lib: lib0:
 let
-  inherit (import ./attrsets.nix { inherit lib; }) importDir;
+  inherit (import ./scaffold.nix { inherit lib; }) importDir;
   libAttrs =
     lib.mapAttrs (_: fn: fn { inherit lib; }) (importDir ./. "default.nix");
 
   prelude = {
     inherit (libAttrs.attrsets)
       updates hasAttrs hasExactAttrs recursiveUpdates mapRecursiveCond thruAttr
-      mapThruAttr mapListToAttrs attrPaths importDir;
+      mapThruAttr mapListToAttrs attrPaths;
     inherit (libAttrs.debug) traceM traceValM;
     # FIXME find a new name for `lib.lists.elemAt`, because `nixpkgs` uses
     # `with` on `lib` after `builtins` which makes it use this `elemAt`.
@@ -32,14 +32,15 @@ let
     inherit (libAttrs.trivial)
       not nand nor xor xnor imply implyDefault applyArgs applyAutoArgs;
     inherit (libAttrs.units) bytes kbytes;
-    inherit (libAttrs.scaffold) mkDirEntry;
+    inherit (libAttrs.scaffold) importDir mkDirEntry;
   };
 in lib0 // prelude // {
   bird = {
     inherit prelude;
     lib = libAttrs;
     inherit (libAttrs.scaffold)
-      mkFlakeTree mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay mkHost mkHome;
+      importDir mkFlakeTree mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay
+      mkHost mkHome;
     inherit (libAttrs.tests)
       evalTest getTestResults runTestsRecursive getTestCoverage showTestResults
       showTestCoverage mkTestSuite isTestSuite importTests collectTests;
