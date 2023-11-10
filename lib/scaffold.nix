@@ -50,24 +50,25 @@ let
 
   importDir' = path: keep: importDirRecursive path keep false;
 
-  _elaborateImportFilter = filter: if filter == null then
-        # The default is to keep it if it has any Nix.
-          (it: it.isNix)
-        else if lib.isFunction filter then
-        # If the `pred` is already a function leave it alone.
-          filter
-        else if types.singleLineStr.check filter then
-        # A single string is an entry name to be excluded.
-          ({ name, isNix, ... }: isNix && name != filter)
-        else if (types.listOf types.singleLineStr).check filter then
-        # A list of strings is a list of names to exclude.
-          ({ name, isNix, ... }: isNix && !(builtins.elem name filter))
-        else if (types.listOf types.function).check filter then
-        # Each function in a list is folded, applied, and compounded with AND.
-          (it: lib.foldl' (pass: fn: pass && fn it) it.isNix filter)
-        else
-          throw
-          "pred can only be elaborated from null, string, list of string, function, or list of function";
+  _elaborateImportFilter = filter:
+    if filter == null then
+    # The default is to keep it if it has any Nix.
+      (it: it.isNix)
+    else if lib.isFunction filter then
+    # If the `pred` is already a function leave it alone.
+      filter
+    else if types.singleLineStr.check filter then
+    # A single string is an entry name to be excluded.
+      ({ name, isNix, ... }: isNix && name != filter)
+    else if (types.listOf types.singleLineStr).check filter then
+    # A list of strings is a list of names to exclude.
+      ({ name, isNix, ... }: isNix && !(builtins.elem name filter))
+    else if (types.listOf types.function).check filter then
+    # Each function in a list is folded, applied, and compounded with AND.
+      (it: lib.foldl' (pass: fn: pass && fn it) it.isNix filter)
+    else
+      throw
+      "pred can only be elaborated from null, string, list of string, function, or list of function";
 
   _elaborateRecurseFilter = filter:
     if lib.isBool filter then
@@ -263,12 +264,25 @@ let
       }))
     ];
 
-  walkDirRecursive = dir: filter: op:
-    walkDir dir filter
-    (it: if it.isDir then walkDirRecursive it.path filter op else op it);
+  # Like `walkDir` but `rename` both filters and renames attrs.
+  # If `rename` returns `null` for an entry, it is filtered out.
+  # If a string is returned, that is the attribute name.
+  walkDir' = dir: rename: op:
+    lib.pipe dir [
+      readDirEntries
+      (builtins.filter (it: rename it != null))
+      (lib.mapListToAttrs (it: {
+        name = rename it;
+        value = op it;
+      }))
+    ];
+
+  walkDirRecursive = dir: rename: op:
+    walkDir' dir rename
+    (it: if it.isDir then walkDirRecursive it.path rename op else op it);
 in {
   #
   inherit importDir importDir' importDirRecursive mkFlakeSystems
     mkJoinedOverlays mkUnfreeOverlay mkHost mkHome mkDirEntry readDirEntries
-    walkDir walkDirRecursive;
+    walkDir walkDir' walkDirRecursive;
 }
