@@ -1,5 +1,7 @@
 { lib }:
 let
+  inherit (lib) types;
+
   # Takes a directory and a deny clause, and imports each file or directory
   # based on rules. An attribute set of the imported expressions is returned,
   # named according to each file with the `.nix` suffix removed.
@@ -48,44 +50,47 @@ let
 
   importDir' = path: keep: importDirRecursive path keep false;
 
-  importDirRecursive = path: keep: recurse:
-    let
-      inherit (lib) types;
-      # Predicate that determines if an importable entry should be kept.
-      keep' = # #
-        if keep == null then
+  _elaborateImportFilter = filter: if filter == null then
         # The default is to keep it if it has any Nix.
           (it: it.isNix)
-        else if lib.isFunction keep then
+        else if lib.isFunction filter then
         # If the `pred` is already a function leave it alone.
-          keep
-        else if types.singleLineStr.check keep then
+          filter
+        else if types.singleLineStr.check filter then
         # A single string is an entry name to be excluded.
-          ({ name, isNix, ... }: isNix && name != keep)
-        else if (types.listOf types.singleLineStr).check keep then
+          ({ name, isNix, ... }: isNix && name != filter)
+        else if (types.listOf types.singleLineStr).check filter then
         # A list of strings is a list of names to exclude.
-          ({ name, isNix, ... }: isNix && !(builtins.elem name keep))
-        else if (types.listOf types.function).check keep then
+          ({ name, isNix, ... }: isNix && !(builtins.elem name filter))
+        else if (types.listOf types.function).check filter then
         # Each function in a list is folded, applied, and compounded with AND.
-          (it: lib.foldl' (pass: fn: pass && fn it) it.isNix keep)
+          (it: lib.foldl' (pass: fn: pass && fn it) it.isNix filter)
         else
           throw
           "pred can only be elaborated from null, string, list of string, function, or list of function";
+
+  _elaborateRecurseFilter = filter:
+    if lib.isBool filter then
+    # The default is to recurse on directories of Nix files.
+      (it: filter && it.hasNixFiles)
+    else if lib.isFunction filter then
+    # Leave existing functions alone.
+      filter
+    else if (types.listOf types.function).check filter then
+    # Each function in a list is folded, applied, and compounded with AND.
+      (it: lib.foldl' (pass: fn: pass && fn it) true filter)
+    else
+      throw "recurse can only be a boolean or a direntry filter";
+
+  importDirRecursive = dir: keep: recurse:
+    let
+      # Predicate that determines if an importable entry should be kept.
+      keep' = _elaborateImportFilter keep;
       # Predicate that determines if an entry should be recursed.
-      recurse' = # #
-        if lib.isBool recurse then
-        # The default is to recurse on directories of Nix files.
-          (it: recurse && it.hasNixFiles)
-        else if lib.isFunction recurse then
-        # Leave existing functions alone.
-          recurse
-        else if (types.listOf types.function).check recurse then
-        # Each function in a list is folded, applied, and compounded with AND.
-          (it: lib.foldl' (pass: fn: pass && fn it) true recurse)
-        else
-          throw "recurse can only be a boolean or a direntry filter";
-    in lib.pipe (builtins.readDir path) [
-      (lib.mapAttrsToList (lib.mkDirEntry path))
+      recurse' = _elaborateRecurseFilter recurse;
+
+    in lib.pipe (builtins.readDir dir) [
+      (lib.mapAttrsToList (lib.mkDirEntry dir))
       (builtins.filter (it: keep' it || recurse' it))
       (map (it: {
         name =
