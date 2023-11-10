@@ -119,12 +119,22 @@ let
       else
         op it);
 
-  importDir' = path: keep: importDirRecursive path keep false;
+  importDir' = dir: filter:
+    importDirRecursive' dir {
+      inherit filter;
+      importDefault = true;
+    };
+
+  importDirRecursive = dir: filter:
+    importDirRecursive' dir {
+      inherit filter;
+      importDefault = false;
+    };
 
   _elaborateImportFilter = filter:
     if filter == null then
     # The default is to keep it if it has any Nix.
-      (it: it.isNix)
+      (it: it.isNix && !it.isHidden)
     else if lib.isFunction filter then
     # If the `pred` is already a function leave it alone.
       filter
@@ -141,42 +151,34 @@ let
       throw
       "pred can only be elaborated from null, string, list of string, function, or list of function";
 
-  _elaborateRecurseFilter = filter:
-    if lib.isBool filter then
-    # The default is to recurse on directories of Nix files.
-      (it: filter && it.hasNixFiles)
-    else if lib.isFunction filter then
-    # Leave existing functions alone.
-      filter
-    else if (types.listOf types.function).check filter then
-    # Each function in a list is folded, applied, and compounded with AND.
-      (it: lib.foldl' (pass: fn: pass && fn it) true filter)
-    else
-      throw "recurse can only be a boolean or a direntry filter";
-
-  importDirRecursive = dir: keep: recurse:
-    let
-      # Predicate that determines if an importable entry should be kept.
-      keep' = _elaborateImportFilter keep;
-      # Predicate that determines if an entry should be recursed.
-      recurse' = _elaborateRecurseFilter recurse;
-
-    in lib.pipe (builtins.readDir dir) [
-      (lib.mapAttrsToList (lib.mkDirEntry dir))
-      (builtins.filter (it: keep' it || recurse' it))
-      (map (it: {
-        name =
-          if it.isNixFile then lib.removeSuffix ".nix" it.name else it.name;
-        value = # #
-          if it.hasNixFiles && recurse' it then
-            importDirRecursive it.path keep' recurse'
-          else if it.isNixFile || it.hasDefault then
-            import it.path
-          else
-            abort "unfiltered direntry: ${lib.generators.toPretty { } it}";
-      }))
-      builtins.listToAttrs
-    ];
+  # Elaborate recursive import of Nix files.
+  # The defaults provide results similar to a file tree,
+  # But with non-Nix files removed.
+  importDirRecursive' = dir:
+    {
+    # If this returns `true` then the file will be kept.
+    filter ? null,
+    # Whether directories containing `default.nix` should be imported or recursed.
+    importDefault ? false,
+    #
+    filter' ? _elaborateImportFilter filter,
+    # Returns a string for `true` and `null` for `false.
+    rename ? (it:
+      if filter' it then
+        if it.isNixFile then lib.removeSuffix ".nix" it.name else it.name
+      else
+        null),
+    ##
+    }:
+    walkDir' dir rename (it:
+      if importDefault && it.hasDefault then
+        import it.path
+      else if it.isNixFile then
+        import it.path
+      else if it.hasNixFiles then
+        importDirRecursive' it.path { inherit filter' importDefault rename; }
+      else
+        abort "filter needs to be stricter: ${lib.generators.toPretty { } it}");
 
   mkFlakeSystems = matrix:
     lib.pipe matrix [
@@ -284,6 +286,6 @@ let
 in {
   #
   inherit importDir mkDirEntry readDirEntries walkDir walkDir' walkDirRecursive
-    walkDirRecursiveCond importDir' importDirRecursive mkFlakeSystems
-    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome;
+    walkDirRecursiveCond importDir' importDirRecursive importDirRecursive'
+    mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay mkHost mkHome;
 }

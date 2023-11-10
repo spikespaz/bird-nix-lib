@@ -34,7 +34,7 @@ let
     inherit (libAttrs.units) bytes kbytes;
     inherit (libAttrs.scaffold)
       importDir mkDirEntry readDirEntries walkDir walkDir' walkDirRecursive
-      walkDirRecursiveCond importDir' importDirRecursive;
+      walkDirRecursiveCond importDir' importDirRecursive importDirRecursive';
   };
 in lib0 // prelude // {
   bird = {
