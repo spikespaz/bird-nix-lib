@@ -280,9 +280,18 @@ let
   walkDirRecursive = dir: rename: op:
     walkDir' dir rename
     (it: if it.isDir then walkDirRecursive it.path rename op else op it);
+
+  # Like `walkDirsRecursive` but with an additional `cond` predicate that
+  # chooses when to recurse a given entry.
+  walkDirRecursiveCond = dir: cond: rename: op:
+    walkDir' dir rename (it:
+      if it.isDir && cond it then
+        walkDirRecursiveCond it.path rename op
+      else
+        op it);
 in {
   #
   inherit importDir importDir' importDirRecursive mkFlakeSystems
     mkJoinedOverlays mkUnfreeOverlay mkHost mkHome mkDirEntry readDirEntries
-    walkDir walkDir' walkDirRecursive;
+    walkDir walkDir' walkDirRecursive walkDirRecursiveCond;
 }
