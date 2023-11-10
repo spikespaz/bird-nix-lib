@@ -41,8 +41,8 @@ in lib0 // prelude // {
     inherit prelude;
     lib = libAttrs;
     inherit (libAttrs.scaffold)
-      importDir importDir' importDirRecursive mkFlakeSystems mkJoinedOverlays
-      mkUnfreeOverlay mkHost mkHome;
+      importDir importDir' importDirRecursive mkJoinedOverlays mkUnfreeOverlay
+      mkHost mkHome;
     inherit (libAttrs.tests)
       evalTest getTestResults runTestsRecursive getTestCoverage showTestResults
       showTestCoverage mkTestSuite isTestSuite importTests collectTests;

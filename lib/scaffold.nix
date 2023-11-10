@@ -180,12 +180,6 @@ let
       else
         abort "filter needs to be stricter: ${lib.generators.toPretty { } it}");
 
-  mkFlakeSystems = matrix:
-    lib.pipe matrix [
-      (map (lib.applyArgs lib.intersectLists))
-      lib.concatLists
-    ];
-
   mkJoinedOverlays = overlays: pkgs: pkgs0:
     lib.foldl' (attrs: overlay: attrs // (overlay pkgs pkgs0)) { } overlays;
 
@@ -287,5 +281,5 @@ in {
   #
   inherit importDir mkDirEntry readDirEntries walkDir walkDir' walkDirRecursive
     walkDirRecursiveCond importDir' importDirRecursive importDirRecursive'
-    mkFlakeSystems mkJoinedOverlays mkUnfreeOverlay mkHost mkHome;
+    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome;
 }
