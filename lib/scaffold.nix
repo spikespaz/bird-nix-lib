@@ -245,8 +245,25 @@ let
 
   readDirEntries = dir:
     lib.mapAttrsToList (mkDirEntry dir) (builtins.readDir dir);
+
+  # Read `dir` to directory entries,
+  # filter out entries by the `filter` predicate, and then apply `op` to each.
+  walkDir = dir: filter: op:
+    lib.pipe dir [
+      readDirEntries
+      (builtins.filter filter)
+      (lib.mapListToAttrs (it: {
+        name = it.name;
+        value = op it;
+      }))
+    ];
+
+  walkDirRecursive = dir: filter: op:
+    walkDir dir filter
+    (it: if it.isDir then walkDirRecursive it.path filter op else op it);
 in {
   #
   inherit importDir importDir' importDirRecursive mkFlakeSystems
-    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome mkDirEntry readDirEntries;
+    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome mkDirEntry readDirEntries
+    walkDir walkDirRecursive;
 }
