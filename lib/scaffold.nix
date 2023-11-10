@@ -48,6 +48,77 @@ let
       }))
     ];
 
+  mkDirEntry = dirName: name: type:
+    let
+      _atRoot = path: builtins.match "^/[^/]*/?$" path != null;
+      _hasPrefix = lib.hasPrefix (toString dirName) name;
+      _extMatch = builtins.match "^.*(\\..+)$" name;
+    in rec {
+      inherit name type;
+      path = "${pathPrefix}/${baseName}";
+      exists = builtins.pathExists path;
+      baseName = baseNameOf name;
+      pathPrefix = toString dirName;
+      relPath = if _hasPrefix then lib.removePrefix pathPrefix name else name;
+      atRoot = _atRoot relPath;
+      extension =
+        if _extMatch != null then builtins.elemAt _extMatch 0 else null;
+      isHidden = lib.hasPrefix "." baseName;
+      isLink = type == "symlink";
+      isFile = type == "regular";
+      isDir = type == "directory";
+      isProject = !isHidden && (isFile || isDir);
+      isNixFile = isFile && lib.hasSuffix ".nix" baseName;
+      isDefault = isFile && baseName == "default.nix";
+      hasDefault = isDir && lib.pathIsRegularFile "${path}/default.nix";
+      hasNixFiles =
+        let ls = lib.mapAttrsToList (mkDirEntry path) (builtins.readDir path);
+        in exists && isDir
+        && (builtins.any (it: it.isNixFile || (it.isDir && it.hasNixFiles)) ls);
+      isNix = isProject && (isNixFile || (isDir && hasNixFiles));
+    };
+
+  readDirEntries = dir:
+    lib.mapAttrsToList (mkDirEntry dir) (builtins.readDir dir);
+
+  # Read `dir` to directory entries,
+  # filter out entries by the `filter` predicate, and then apply `op` to each.
+  walkDir = dir: filter: op:
+    lib.pipe dir [
+      readDirEntries
+      (builtins.filter filter)
+      (lib.mapListToAttrs (it: {
+        name = it.name;
+        value = op it;
+      }))
+    ];
+
+  # Like `walkDir` but `rename` both filters and renames attrs.
+  # If `rename` returns `null` for an entry, it is filtered out.
+  # If a string is returned, that is the attribute name.
+  walkDir' = dir: rename: op:
+    lib.pipe dir [
+      readDirEntries
+      (builtins.filter (it: rename it != null))
+      (lib.mapListToAttrs (it: {
+        name = rename it;
+        value = op it;
+      }))
+    ];
+
+  walkDirRecursive = dir: rename: op:
+    walkDir' dir rename
+    (it: if it.isDir then walkDirRecursive it.path rename op else op it);
+
+  # Like `walkDirsRecursive` but with an additional `cond` predicate that
+  # chooses when to recurse a given entry.
+  walkDirRecursiveCond = dir: cond: rename: op:
+    walkDir' dir rename (it:
+      if it.isDir && cond it then
+        walkDirRecursiveCond it.path rename op
+      else
+        op it);
+
   importDir' = path: keep: importDirRecursive path keep false;
 
   _elaborateImportFilter = filter:
@@ -107,14 +178,6 @@ let
       builtins.listToAttrs
     ];
 
-  # systems = with lib.systems.doubles;
-  #   lib.bird.mkFlakeSystems [
-  #     [ x86_64 linux ]
-  #     [ arm linux ]
-  #     [ aarch64 linux ]
-  #     [ arm darwin ]
-  #     [ aarch64 darwin ]
-  #   ];
   mkFlakeSystems = matrix:
     lib.pipe matrix [
       (map (lib.applyArgs lib.intersectLists))
@@ -218,80 +281,9 @@ let
         } // nixpkgsArgs);
         extraSpecialArgs = args // extraSpecialArgs // { inherit nixpkgs lib; };
       });
-
-  mkDirEntry = dirName: name: type:
-    let
-      _atRoot = path: builtins.match "^/[^/]*/?$" path != null;
-      _hasPrefix = lib.hasPrefix (toString dirName) name;
-      _extMatch = builtins.match "^.*(\\..+)$" name;
-    in rec {
-      inherit name type;
-      path = "${pathPrefix}/${baseName}";
-      exists = builtins.pathExists path;
-      baseName = baseNameOf name;
-      pathPrefix = toString dirName;
-      relPath = if _hasPrefix then lib.removePrefix pathPrefix name else name;
-      atRoot = _atRoot relPath;
-      extension =
-        if _extMatch != null then builtins.elemAt _extMatch 0 else null;
-      isHidden = lib.hasPrefix "." baseName;
-      isLink = type == "symlink";
-      isFile = type == "regular";
-      isDir = type == "directory";
-      isProject = !isHidden && (isFile || isDir);
-      isNixFile = isFile && lib.hasSuffix ".nix" baseName;
-      isDefault = isFile && baseName == "default.nix";
-      hasDefault = isDir && lib.pathIsRegularFile "${path}/default.nix";
-      hasNixFiles =
-        let ls = lib.mapAttrsToList (mkDirEntry path) (builtins.readDir path);
-        in exists && isDir
-        && (builtins.any (it: it.isNixFile || (it.isDir && it.hasNixFiles)) ls);
-      isNix = isProject && (isNixFile || (isDir && hasNixFiles));
-    };
-
-  readDirEntries = dir:
-    lib.mapAttrsToList (mkDirEntry dir) (builtins.readDir dir);
-
-  # Read `dir` to directory entries,
-  # filter out entries by the `filter` predicate, and then apply `op` to each.
-  walkDir = dir: filter: op:
-    lib.pipe dir [
-      readDirEntries
-      (builtins.filter filter)
-      (lib.mapListToAttrs (it: {
-        name = it.name;
-        value = op it;
-      }))
-    ];
-
-  # Like `walkDir` but `rename` both filters and renames attrs.
-  # If `rename` returns `null` for an entry, it is filtered out.
-  # If a string is returned, that is the attribute name.
-  walkDir' = dir: rename: op:
-    lib.pipe dir [
-      readDirEntries
-      (builtins.filter (it: rename it != null))
-      (lib.mapListToAttrs (it: {
-        name = rename it;
-        value = op it;
-      }))
-    ];
-
-  walkDirRecursive = dir: rename: op:
-    walkDir' dir rename
-    (it: if it.isDir then walkDirRecursive it.path rename op else op it);
-
-  # Like `walkDirsRecursive` but with an additional `cond` predicate that
-  # chooses when to recurse a given entry.
-  walkDirRecursiveCond = dir: cond: rename: op:
-    walkDir' dir rename (it:
-      if it.isDir && cond it then
-        walkDirRecursiveCond it.path rename op
-      else
-        op it);
 in {
   #
-  inherit importDir importDir' importDirRecursive mkFlakeSystems
-    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome mkDirEntry readDirEntries
-    walkDir walkDir' walkDirRecursive walkDirRecursiveCond;
+  inherit importDir mkDirEntry readDirEntries walkDir walkDir' walkDirRecursive
+    walkDirRecursiveCond importDir' importDirRecursive mkFlakeSystems
+    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome;
 }
