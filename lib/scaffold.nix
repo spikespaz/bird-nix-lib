@@ -242,8 +242,11 @@ let
         && (builtins.any (it: it.isNixFile || (it.isDir && it.hasNixFiles)) ls);
       isNix = isProject && (isNixFile || (isDir && hasNixFiles));
     };
+
+  readDirEntries = dir:
+    lib.mapAttrsToList (mkDirEntry dir) (builtins.readDir dir);
 in {
   #
   inherit importDir importDir' importDirRecursive mkFlakeSystems
-    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome mkDirEntry;
+    mkJoinedOverlays mkUnfreeOverlay mkHost mkHome mkDirEntry readDirEntries;
 }

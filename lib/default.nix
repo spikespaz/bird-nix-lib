@@ -33,7 +33,7 @@ let
       not nand nor xor xnor imply implyDefault applyArgs applyAutoArgs;
     inherit (libAttrs.units) bytes kbytes;
     inherit (libAttrs.scaffold)
-      importDir importDir' importDirRecursive mkDirEntry;
+      importDir importDir' importDirRecursive mkDirEntry readDirEntries;
   };
 in lib0 // prelude // {
   bird = {
