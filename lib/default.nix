@@ -27,7 +27,8 @@ let
       lpadString rpadString strip lstrip rstrip trim startsWith endsWith
       toPercent;
     inherit (libAttrs.radix) intToHex;
-    inherit (libAttrs.encoding) encodeBinary decodeBinary;
+    inherit (libAttrs.encoding)
+      encodeBinary encodeBinary' decodeBinary decodeBinary';
     inherit (libAttrs.shellscript)
       wrapShellScript writeShellScriptShebang writeNuScript;
     inherit (libAttrs.trivial)

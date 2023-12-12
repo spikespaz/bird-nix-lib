@@ -5,6 +5,9 @@ let
   encodeBinary = n:
     if n == 0 then [ ] else [ (lib.mod n 2) ] ++ (encodeBinary (n / 2));
 
+  # The big-endian variant of `encodeBinary`.
+  encodeBinary' = n: lib.reverseList (encodeBinary n);
+
   # Decode a little-endian list of bits (integers of `0` or `1`)
   # into an integer.
   decodeBinary = bits:
@@ -16,4 +19,8 @@ let
         n = 0;
         place = 1;
       } bits).n;
-in { inherit encodeBinary decodeBinary; }
+
+  # # The big-endian version of `encodeBinary`.
+  # The big-endian version of `decodeBinary`.
+  decodeBinary' = bits: lib.decodeBinary (lib.reverseList bits);
+in { inherit encodeBinary encodeBinary' decodeBinary decodeBinary'; }
