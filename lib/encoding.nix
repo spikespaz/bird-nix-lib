@@ -8,6 +8,15 @@ let
   # The big-endian variant of `encodeBinary`.
   encodeBinary' = n: lib.reverseList (encodeBinary n);
 
+  encodeBinaryBytes = n:
+    let
+      bits = encodeBinary n;
+      numTrail = lib.mod (lib.length bits) 8;
+      padding = lib.replicate (8 - numTrail) 0;
+    in if numTrail == 0 then bits else bits ++ padding;
+
+  encodeBinaryBytes' = n: lib.reverseList (encodeBinaryBytes n);
+
   # Decode a little-endian list of bits (integers of `0` or `1`)
   # into an integer.
   decodeBinary = bits:
@@ -23,4 +32,7 @@ let
   # # The big-endian version of `encodeBinary`.
   # The big-endian version of `decodeBinary`.
   decodeBinary' = bits: lib.decodeBinary (lib.reverseList bits);
-in { inherit encodeBinary encodeBinary' decodeBinary decodeBinary'; }
+in {
+  inherit encodeBinary encodeBinary' encodeBinaryBytes encodeBinaryBytes'
+    decodeBinary decodeBinary';
+}
