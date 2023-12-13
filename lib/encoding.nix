@@ -20,18 +20,18 @@ let
   # Decode a little-endian list of bits (integers of `0` or `1`)
   # into an integer.
   decodeBinary = bits:
-    (lib.foldl' ({ n, place }:
+    (lib.foldl' ({ int, place }:
       bit: {
-        n = place * bit + n;
+        int = place * bit + int;
         place = place * 2;
       }) {
-        n = 0;
+        int = 0;
         place = 1;
-      } bits).n;
+      } bits).int;
 
   # # The big-endian version of `encodeBinary`.
   # The big-endian version of `decodeBinary`.
-  decodeBinary' = bits: lib.decodeBinary (lib.reverseList bits);
+  decodeBinary' = bits: decodeBinary (lib.reverseList bits);
 in {
   inherit encodeBinary encodeBinary' encodeBinaryBytes encodeBinaryBytes'
     decodeBinary decodeBinary';
