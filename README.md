@@ -50,6 +50,14 @@ Which shows the contents of `lib.lib.bird` (or `lib.bird`), pasted here:
       traceM = "<function>";
       traceValM = "<function>";
     };
+    encoding = {
+      decodeBinary = "<function>";
+      decodeBinary' = "<function>";
+      encodeBinary = "<function>";
+      encodeBinary' = "<function>";
+      encodeBinaryBytes = "<function>";
+      encodeBinaryBytes' = "<function>";
+    };
     generators = {
       toTOML = "<function>";
       toTOMLFile = "<function>";
@@ -219,9 +227,15 @@ Which shows the contents of `lib.lib.bird` (or `lib.bird`), pasted here:
   };
   charAt = "<function>";
   charAtDefault = "<function>";
+  decodeBinary = "<function>";
+  decodeBinary' = "<function>";
   defaultSourceFilter = "<function>";
   editorSourceFilter = "<function>";
   elemAtDefault = "<function>";
+  encodeBinary = "<function>";
+  encodeBinary' = "<function>";
+  encodeBinaryBytes = "<function>";
+  encodeBinaryBytes' = "<function>";
   endsWith = "<function>";
   flakeSourceFilter = "<function>";
   flattenCond = "<function>";
