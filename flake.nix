@@ -7,10 +7,9 @@
     # nixpkgs.url = "github:nix-community/nixpkgs.lib";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     systems.url = "github:nix-systems/default";
-    nixfmt.url = "github:serokell/nixfmt";
   };
 
-  outputs = { self, nixpkgs, systems, nixfmt }:
+  outputs = { self, nixpkgs, systems }:
     let
       inherit (self.lib) lib;
       eachSystem = lib.genAttrs (import systems);
@@ -36,6 +35,7 @@
         inherit (self.lib.lib.bird) lib;
       };
       # $ nix fmt
-      formatter = eachSystem (system: nixfmt.packages.${system}.default);
+      formatter =
+        eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-classic);
     };
 }

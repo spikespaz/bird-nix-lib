@@ -31,6 +31,4 @@ let
   # # The big-endian version of `encodeBinary`.
   # The big-endian version of `decodeBinary`.
   decodeBinary' = bits: decodeBinary (lib.reverseList bits);
-in {
-  inherit encodeBinary encodeBinaryBytes encodeBinaryBytes' decodeBinary;
-}
+in { inherit encodeBinary encodeBinaryBytes encodeBinaryBytes' decodeBinary; }
