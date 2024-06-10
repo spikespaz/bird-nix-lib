@@ -3,12 +3,14 @@
     "Experimetal extensions for `lib`, extracted from spikespaz/dotfiles.";
 
   inputs = {
-    nixpkgs-lib.url = "github:nix-community/nixpkgs.lib";
+    # You can set with `follows`:
+    # nixpkgs.url = "github:nix-community/nixpkgs.lib";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     systems.url = "github:nix-systems/default";
     nixfmt.url = "github:serokell/nixfmt";
   };
 
-  outputs = { self, nixpkgs-lib, systems, nixfmt }:
+  outputs = { self, nixpkgs, systems, nixfmt }:
     let
       inherit (self.lib) lib;
       eachSystem = lib.genAttrs (import systems);
@@ -25,7 +27,7 @@
         #   lib = inputs.bird.lib.lib;
         # in
         # ```
-        lib = nixpkgs-lib.lib.extend self.lib.overlay;
+        lib = nixpkgs.lib.extend self.lib.overlay;
       };
       # $ nix flake check
       # or
