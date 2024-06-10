@@ -11,23 +11,16 @@
 
   outputs = { self, nixpkgs, systems }:
     let
-      inherit (self.lib) lib;
+      inherit (self) lib;
       eachSystem = lib.genAttrs (import systems);
     in {
-      lib = {
-        # ```nix
-        # let
-        #   lib = nixpkgs.lib.extend (inputs.bird-nix-lib.lib.overlay);
-        # in
-        # ```
-        overlay = import ./lib;
-        # ```nix
-        # let
-        #   lib = inputs.bird.lib.lib;
-        # in
-        # ```
-        lib = nixpkgs.lib.extend self.lib.overlay;
-      };
+      # ```nix
+      # let
+      #   lib = nixpkgs.lib.extend (inputs.bird-nix-lib.lib.overlay);
+      # in
+      # ```
+      lib = let overlay = import ./lib;
+      in nixpkgs.lib.extend overlay // { inherit overlay; };
       # $ nix flake check
       # or
       # $ nix eval 'path:.#tests'
