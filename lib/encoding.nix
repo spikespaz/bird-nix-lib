@@ -1,27 +1,26 @@
 { lib }:
 let
   # Encode an integer as a list of bits (integers of `0` or `1`).
-  # The result is little-endian.
   encodeBinary = n:
-    if n == 0 then [ ] else [ (lib.mod n 2) ] ++ (encodeBinary (n / 2));
-
-  # The big-endian variant of `encodeBinary`.
-  encodeBinary' = n: lib.reverseList (encodeBinary n);
+    let
+      recurse = n:
+        if n == 0 then [ ] else (recurse (n / 2)) ++ [ (lib.mod n 2) ];
+    in if n == 0 then [ 0 ] else recurse n;
 
   encodeBinaryBytes = n:
     let
       bits = encodeBinary n;
       numTrail = lib.mod (lib.length bits) 8;
       padding = lib.replicate (8 - numTrail) 0;
-    in if numTrail == 0 then bits else bits ++ padding;
+    in if numTrail == 0 then bits else padding ++ bits;
 
   encodeBinaryBytes' = n: lib.reverseList (encodeBinaryBytes n);
 
   # Decode a little-endian list of bits (integers of `0` or `1`)
   # into an integer.
   decodeBinary = bits:
-    (lib.foldl' ({ int, place }:
-      bit: {
+    (lib.foldr (bit:
+      { int, place }: {
         int = place * bit + int;
         place = place * 2;
       }) {
@@ -33,6 +32,5 @@ let
   # The big-endian version of `decodeBinary`.
   decodeBinary' = bits: decodeBinary (lib.reverseList bits);
 in {
-  inherit encodeBinary encodeBinary' encodeBinaryBytes encodeBinaryBytes'
-    decodeBinary decodeBinary';
+  inherit encodeBinary encodeBinaryBytes encodeBinaryBytes' decodeBinary;
 }

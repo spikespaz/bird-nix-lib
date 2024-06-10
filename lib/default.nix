@@ -28,8 +28,7 @@ let
       toPercent;
     inherit (libAttrs.radix) intToHex;
     inherit (libAttrs.encoding)
-      encodeBinary encodeBinary' encodeBinaryBytes encodeBinaryBytes'
-      decodeBinary decodeBinary';
+      encodeBinary encodeBinaryBytes encodeBinaryBytes' decodeBinary;
     inherit (libAttrs.shellscript)
       wrapShellScript writeShellScriptShebang writeNuScript;
     inherit (libAttrs.trivial)
