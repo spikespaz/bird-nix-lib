@@ -25,7 +25,7 @@
       # or
       # $ nix eval 'path:.#tests'
       tests = lib.bird.runTestsRecursive ./tests { inherit lib; } {
-        inherit (self.lib.lib.bird) lib;
+        inherit (self.lib.bird) lib;
       };
       # $ nix fmt
       formatter =
