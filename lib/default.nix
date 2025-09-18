@@ -8,6 +8,7 @@ let
     inherit (libAttrs.attrsets)
       updates hasAttrs hasExactAttrs recursiveUpdates mapRecursiveCond thruAttr
       mapThruAttr mapListToAttrs attrPaths;
+    inherit (libAttrs.bits) bitShiftLeft bitShiftRight;
     inherit (libAttrs.debug) traceM traceValM;
     # FIXME find a new name for `lib.lists.elemAt`, because `nixpkgs` uses
     # `with` on `lib` after `builtins` which makes it use this `elemAt`.
